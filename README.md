@@ -77,12 +77,12 @@ Ranked by how much the AI should trust the signal:
 
 Per-goal scoreboard: send count, reply rate, goal-conversion rate (visible; open/click rate shown as secondary/vanity stats). The AI favors the phrasing, subject style, and timing that have historically gotten *replies* — not opens — for this user, for this kind of goal.
 
-See [docs/features.md](docs/features.md) for the full feature breakdown, [docs/google-auth.md](docs/google-auth.md) for the Gmail access plan, and [docs/ui.md](docs/ui.md) for the interface spec.
+See [docs/features.md](docs/features.md) for the full feature breakdown, [docs/google-auth.md](docs/google-auth.md) for the Gmail access plan, [docs/ui.md](docs/ui.md) for the interface spec, and [docs/journey.md](docs/journey.md) for the end-to-end user journey and the gaps it surfaced (deliverability guardrails, contact resolution, two-track feedback loop, progressive autonomy).
 
 ## Decisions (v1)
 
 - **Auto-send: off.** Every draft is reviewed and sent manually. Revisit once draft quality is proven out.
-- **Gmail history: one-time import, trailing 12 months.** No ongoing sync in v1.
+- **Gmail history: one-time import, trailing 12 months.** No full-mailbox ongoing sync — but threads this tool actually sends into are watched going forward, since reply detection requires it. See [docs/journey.md](docs/journey.md#phase-4-outcome-tracking).
 - **Single-user.** One person, logs in with their own Google account. No teams/multi-user in v1.
 - **Multiple goals can run concurrently** (e.g. a sales goal and a customer-success goal active at the same time, each with its own queue).
 - **Contact scope is goal-dependent**, not a fixed list — each goal determines which Gmail correspondents are relevant to it.
