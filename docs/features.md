@@ -1,19 +1,19 @@
 # Feature list
 
-Every feature needed for a working v1, grouped by build order. Check these off as they land.
+Every feature needed for a working v1, grouped by build order — matches the milestones in [architecture.md](architecture.md#build-order). Check these off as they land.
 
 ## 1. Auth & connection
 
 - [ ] Sign in with Google (Supabase Auth, Google provider)
-- [ ] Request Gmail scopes (`gmail.readonly`, `gmail.compose`) at sign-in — see [google-auth.md](google-auth.md)
+- [ ] Request Gmail + Drive scopes (`gmail.readonly`, `gmail.compose`, `drive.file`) at sign-in — see [google-auth.md](google-auth.md)
 - [ ] Store encrypted Google refresh token, backend-managed access-token refresh
 - [ ] Settings page shows connection status + re-connect flow if the token ever breaks
 
 ## 2. Context ingestion
 
-- [ ] One-time Gmail history import: trailing 12 months of threads, on connect
+- [ ] One-time Gmail history import: trailing 12 months of threads, on connect (metadata/index only — full bodies fetched live thereafter, not duplicated into our DB, see [architecture.md](architecture.md#data-ownership-split))
 - [ ] **Contact resolution pass** (runs once, before goal logic touches anything): dedupe addresses to people, classify human vs. automated senders, drop automated senders from the contact pool, capture company/domain per contact — see [journey.md](journey.md#phase-0-connect--import)
-- [ ] Business document upload (plans, pricing, FAQs, positioning) — stored and chunked for retrieval
+- [ ] Business document upload — saved into the user's own Google Drive via `drive.file`, not our storage; we keep only the file pointer
 - [ ] **Guided context intake** for cold start: a handful of direct questions (what you sell, who it's for, pricing model, top objection) so drafts are grounded even before any docs are uploaded
 - [ ] Voice sample ingestion — pull from the user's own sent mail if there's enough of it (20+ messages); otherwise run a short voice-calibration flow instead of drafting in a generic voice
 

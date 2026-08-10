@@ -12,10 +12,11 @@ Gmail scopes are classified by Google as **sensitive** or **restricted**. Apps r
 
 | Scope | Why |
 |---|---|
-| `gmail.readonly` | Import the trailing 12 months of history for context |
+| `gmail.readonly` | Import the trailing 12 months of history for context, and read live when displaying thread context (mail content is never duplicated into our own DB — see [architecture.md](architecture.md#data-ownership-split)) |
 | `gmail.compose` | Create drafts (covers create/read/update/delete of drafts, and sending) |
+| `drive.file` | Store business-context documents in the user's own Drive rather than our storage — narrow scope, the app only ever sees files it creates or opens, not the whole Drive |
 
-Don't request `https://mail.google.com/` (full mailbox access) or `gmail.modify` — broader than needed, and makes the unverified-app warning scarier than it needs to be.
+Don't request `https://mail.google.com/` (full mailbox access), `gmail.modify`, or a general `drive` scope — all broader than needed, and makes the unverified-app warning scarier than it needs to be.
 
 ## Setup path (single-user, no verification)
 
@@ -42,8 +43,8 @@ Testing-mode apps issue refresh tokens that expire after 7 days — meaning a fu
 ## Data handling notes for the eventual privacy policy
 
 Even unverified, single-user apps that touch Gmail should still follow Google's API Services User Data Policy in practice:
-- Only request the two scopes above.
-- Don't log full email bodies anywhere outside the app's own database.
+- Only request the three scopes above.
+- Don't persist full email bodies in our own database — fetch live from Gmail when needed, store only small derived data (citation snippets, contact-resolution flags). See [architecture.md](architecture.md#data-ownership-split).
 - Store the refresh token encrypted at rest, not in plaintext.
 
 ## Open items
