@@ -63,14 +63,21 @@ A ranked queue. Each item:
 
 Every email this tool sends is tracked after the fact, and the results feed back into how future drafts get written. This is the gamification hook — sending toward a goal has a visible score, not just a queue you clear.
 
-| Metric | How | Feeds back into |
-|---|---|---|
-| Delivered | Gmail API send confirmation | Baseline — did it even go out |
-| Opened | Tracking pixel per sent email | Which subject lines / send times get attention |
-| Replied | Gmail thread watch on sent messages | Which framing/asks actually move the goal forward |
-| Goal progress | Replies classified against the goal (e.g. "booked a call," "said no," "no response") | Ranking of what kind of email to send next, and to whom |
+Ranked by how much the AI should trust the signal:
 
-Per-goal scoreboard: send count, open rate, reply rate, goal-conversion rate. The AI uses this history as feedback — favoring the phrasing, subject style, and timing that historically get opens/replies for this user, for this kind of goal.
+| Rank | Metric | How | Reliability |
+|---|---|---|---|
+| 1 | Delivered / bounced | Gmail API send confirmation | Ground truth — real SMTP event |
+| 2 | Replied | Gmail thread watch on sent messages | Ground truth — real thread event, no proxy involved |
+| 3 | Reply outcome | Reply text classified by LLM (booked call / said no / neutral / no response) | Modeled, not ground truth, but reading real text — trustworthy enough to score |
+| 4 | Link clicked (if draft includes a link) | Redirect-wrapper tracking | Noisy — corporate security scanners auto-click links to scan for malware, inflating counts |
+| 5 | Opened | Tracking pixel | **Not trustworthy — display only, never fed into scoring.** Apple Mail Privacy Protection (iOS 15+) pre-fetches every pixel on delivery regardless of whether the human opens it, pushing open rate toward ~100% artificially. Gmail's own image proxy adds further distortion. |
+
+**Scoring loop uses ranks 1–3 only** (delivered → replied → reply outcome). Open rate and click rate are shown on the dashboard for visibility but excluded from the "what should I write next" reasoning.
+
+Per-goal scoreboard: send count, reply rate, goal-conversion rate (visible; open/click rate shown as secondary/vanity stats). The AI favors the phrasing, subject style, and timing that have historically gotten *replies* — not opens — for this user, for this kind of goal.
+
+See [docs/features.md](docs/features.md) for the full feature breakdown, [docs/google-auth.md](docs/google-auth.md) for the Gmail access plan, and [docs/ui.md](docs/ui.md) for the interface spec.
 
 ## Decisions (v1)
 
@@ -85,12 +92,12 @@ Per-goal scoreboard: send count, open rate, reply rate, goal-conversion rate. Th
 Optimizing for *fastest to a working v1*, not for scale:
 
 - **Frontend + backend**: single Next.js app (App Router) — no separate services to stand up
-- **Auth**: Google OAuth (Gmail read/send scopes) via NextAuth — single user, sign in with their own Google account
-- **Database**: Supabase (Postgres) — stores contacts, business docs, generated queue items, send history, open/reply events
-- **LLM**: Claude API — context assembly + drafting
-- **Email send**: Gmail API (send as draft by default; direct send only once trusted)
-- **Scheduling**: cron (Vercel Cron or Supabase scheduled functions) for autonomous mode
-- **Hosting**: Vercel
+- **Auth**: Supabase Auth's Google provider, requesting Gmail scopes as extra OAuth scopes at sign-in — see [docs/google-auth.md](docs/google-auth.md)
+- **Database**: self-hosted Supabase (Postgres) at `dashboard.why57.com` — stores contacts, business docs, goals, generated queue items, send history, reply-outcome classifications
+- **LLM**: Claude API — context assembly + drafting + reply classification
+- **Email send**: Gmail API (draft-first; user reviews and sends from the app, no auto-send in v1)
+- **Scheduling**: deferred — not needed until autonomous mode is built
+- **Hosting**: Vercel (app) + existing self-hosted Supabase (data/auth)
 
 This repo starts as **spec only** — no code yet. Once the spec is solid, scaffold the app in a follow-up pass.
 
@@ -104,9 +111,7 @@ Before this tool drafts anything, it needs:
 
 ## Open questions
 
-- [ ] How does a reply get classified against a goal automatically (booked call vs. no vs. no-response) — manual tagging, or LLM classification of the reply text?
-- [ ] Tracking pixel opens are notoriously unreliable (Gmail image proxy caching, Apple Mail privacy protection) — how much do we lean on open rate vs. reply rate as the real signal?
-- [ ] When two concurrent goals both want to email the same contact, who wins — priority order, or does the tool merge into one email?
+- [ ] When two concurrent goals both want to email the same contact, who wins — priority order, or does the tool merge into one email? (Leaning: priority order, flag the conflict in the UI rather than silently merging — see [docs/features.md](docs/features.md).)
 
 ## Status
 
