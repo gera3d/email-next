@@ -2,6 +2,8 @@
 
 **One question, answered every time you open it: who do I email next, and what do I say?**
 
+> **Current phase: proving the process, not building the app.** Real-world testing against an existing outreach pipeline surfaced concrete execution problems (bounced addresses, thin personalization, broken tracking) before any new code gets written. See [docs/lead-os.md](docs/lead-os.md) for the evidence and the current 3-step plan.
+
 Given your business context (docs, plans, customer data), your contacts, and your Gmail history, this tool outputs a prioritized queue of emails you need to send to move toward a stated goal — subject line, body, and recipient — ready for your review. It then tracks what happens to each send (opened, replied) and feeds that back into how it writes the next one.
 
 ## The problem
@@ -118,4 +120,10 @@ Before this tool drafts anything, it needs:
 
 ## Status
 
-Spec-only. No code yet. Next step: answer the open questions above, then scaffold the Next.js app.
+Spec-only. No code yet — and no code until the underlying process is proven manually. See [docs/lead-os.md](docs/lead-os.md).
+
+### Next steps (in order — don't parallelize)
+
+1. **Check sender health.** Confirm the sending account's current reputation before sending anything else — don't add volume to a possibly-flagged account.
+2. **Fix the spine, re-test for free.** Verify addresses before send, deepen personalization beyond one inserted fact, make tracking query Gmail directly instead of a static sheet — then re-run against the 611 already-qualified, untouched government leads. Zero new cost.
+3. **Pick one new vertical, not two.** Only after step 2 produces a trustworthy number, test trading card stores (cheaper leads, real fallback channel) before marketing companies.
