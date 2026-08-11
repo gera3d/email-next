@@ -15,13 +15,25 @@ def parse_date(s: str) -> datetime:
 
 def load_last_sent(sent_log_path: Path, email_col: str, date_col: str) -> dict:
     last_sent: dict = {}
+    skipped = 0
     with sent_log_path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             email = row[email_col].strip().lower()
-            date = parse_date(row[date_col])
+            if not email or not row.get(date_col, "").strip():
+                skipped += 1
+                continue
+            try:
+                date = parse_date(row[date_col])
+            except ValueError:
+                skipped += 1
+                continue
             if email not in last_sent or date > last_sent[email]:
                 last_sent[email] = date
+    if skipped:
+        print(f"Note: {skipped} sent-log row(s) skipped (missing/unparseable email or date) — "
+              f"not counted toward cooldown, so a candidate they cover could still be wrongly marked eligible.",
+              file=sys.stderr)
     return last_sent
 
 
