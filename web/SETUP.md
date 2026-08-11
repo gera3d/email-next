@@ -9,13 +9,18 @@ Project: `email-next` (`pteqkblqzlnfevmomqln`, us-west-1, free tier). Schema app
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://pteqkblqzlnfevmomqln.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable/anon key from Supabase project settings>
+AGENT_API_KEY=<random secret -- see API.md>
 ```
 
 **Temporary:** RLS policies currently allow the `anon` role on `goals`/`contacts`/`queue_items`/`sent_emails`/`autonomy_state` (migration `temp_allow_anon_pre_oauth`), so the app works before real auth is wired. Drop that policy once Google sign-in lands — see below.
 
-## Gmail OAuth (not wired yet)
+## Agent API
 
-Needs a Google Cloud project + OAuth client — see `docs/google-auth.md` for the exact steps. Once you have a Client ID/Secret, tell me and I'll wire up Supabase Auth's Google provider and drop the temporary anon RLS policy.
+`AGENT_API_KEY` is what Claude/Codex/any agent uses to call the REST API and drive the send loop — see `API.md`. Not the same thing as Google OAuth; agents use their own existing Gmail access to send, this API just reads/writes the queue.
+
+## Gmail OAuth (not needed for the agent-driven workflow -- see API.md)
+
+Only needed if a human wants to send directly from the browser with no agent in the loop. Needs a Google Cloud project + OAuth client — see `docs/google-auth.md` for the exact steps. Once you have a Client ID/Secret, tell me and I'll wire up Supabase Auth's Google provider and drop the temporary anon RLS policy.
 
 ## Run it
 
