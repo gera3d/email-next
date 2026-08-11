@@ -82,3 +82,28 @@ Don't parallelize — each step's output determines whether the next is worth do
 3. **Only after that produces a trustworthy bounce/reply number, pick one new vertical to test** — trading card stores over marketing companies, since it's cheaper to source and has a real fallback channel. Don't stand up both new verticals at once.
 
 See [github.com/gera3d/email-next/issues](https://github.com/gera3d/email-next/issues) for the tracked breakdown of each step.
+
+## Findings — 2026-08-11
+
+Investigating step 1 (sender health) surfaced three things beyond the original scope, plus fresher numbers than the 47-email sample this whole doc was built on.
+
+**Certification status — checked, resolved, no issue.** The live "YRC Government Opportunity Pipeline" tracker (Google Sheet) states the SB(Micro) certification (ID 2053713) as "not submitted or awarded" / INCOMPLETE, dated 2026-07-16. But outreach citing that number as an active credential ("State SB Micro (#2053713) — ...") started 2026-07-27. Confirmed directly against Cal eProcure (logged-in WorkCenter, 2026-08-11): **Cert. ID 2053713, SB(Micro), Approved 2026-07-18, valid 2026-07-18 to 2028-07-31.** Approval landed 2 days after the tracker's last INCOMPLETE note and 9 days before the first email citing it — the claim was accurate when sent. The tracker itself is just stale.
+
+**Fresher bounce numbers.** This doc's ~30% bounce rate comes from a 47-email sample. Actual current volume is far higher: Gmail shows **~201 "State SB Micro" sends** with **~18 bounce/undeliverable notifications in the last 60 days**, roughly **9%**. Better than 30%, but still well above the 5% threshold this doc's own red-team section flags as the reputation-risk line. Sends are ongoing — the most recent found is dated 2026-08-13.
+
+**Data source mismatch — the "611 untouched leads" figure doesn't correspond to anything findable.** The actual live tracker doesn't hold a flat list of 713 qualified/611 untouched leads at all. It runs a stage-gated model (BID NOW / CAPTURE / WATCH / PARTNER / REJECT) with a hard rule — "OWNER APPROVAL REQUIRED" before any contact, email, registration, or account change — and its current live queue is **0 BID NOW, 0 CAPTURE, 3 WATCH, 0 PARTNER**. That does not match "611 untouched leads" in any form. Two possibilities, unresolved: either the 611/713 figures came from a different, unlocated source, or the ~201 "State SB Micro" sends are happening outside the tracker's own approval-gate process entirely. Worth resolving before trusting any "leads remaining" count.
+
+### Build
+
+- [ ] [#15](https://github.com/gera3d/email-next/issues/15) Verify email address before send — standalone script, syntax + MX check (in progress — chosen as first build target)
+- [ ] [#16](https://github.com/gera3d/email-next/issues/16) Tracking reads Gmail directly instead of the stale sheet
+
+### Fix
+
+- [ ] Correct the stale certification status in the "YRC Government Opportunity Pipeline" Google Sheet — it still reads INCOMPLETE/not-submitted; actual status is Approved 2026-07-18–2028-07-31
+- [ ] Reconcile or replace the "713 qualified / 611 untouched" figure used throughout this doc — no matching list was found; the real tracker uses a gated-stage model instead of a flat count
+
+### Research
+
+- [ ] Get an exact sent/bounce count (Gmail's thread-count estimates are rounded for large result sets) before step 3's "trustworthy number" gate can mean anything concrete
+- [ ] Determine whether the ~201 "State SB Micro" sends are going through the Pipeline Control approval gate at all, given the tracker's own queue shows zero active BID NOW/CAPTURE rows — if they're bypassing it, that's a process gap bigger than the bounce rate
