@@ -7,8 +7,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!checkAgentAuth(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
   const supabase = createServerClient();
-  const { data, error } = await supabase.from("queue_items").select("*, contacts(*), goals(name)").eq("id", id).single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+  const { data, error } = await supabase.from("queue_items").select("*, contacts(*), goals(name)").eq("id", id).maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "queue item not found" }, { status: 404 });
   return NextResponse.json({ queue_item: data });
 }
 
@@ -35,8 +36,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.draft_body !== undefined) update.draft_body = body.draft_body;
   if (body.gmail_draft_id !== undefined) update.gmail_draft_id = body.gmail_draft_id;
 
-  const { data, error } = await supabase.from("queue_items").update(update).eq("id", id).select().single();
+  const { data, error } = await supabase.from("queue_items").update(update).eq("id", id).select().maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "queue item not found" }, { status: 404 });
 
   // A real send gets logged to sent_emails too, so tracking has something to work with later.
   if (body.status === "sent" && body.gmail_message_id) {
