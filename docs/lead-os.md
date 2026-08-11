@@ -89,14 +89,9 @@ Investigating step 1 (sender health) surfaced three things beyond the original s
 
 **Certification status — checked, resolved, no issue.** The live "YRC Government Opportunity Pipeline" tracker (Google Sheet) states the SB(Micro) certification (ID 2053713) as "not submitted or awarded" / INCOMPLETE, dated 2026-07-16. But outreach citing that number as an active credential ("State SB Micro (#2053713) — ...") started 2026-07-27. Confirmed directly against Cal eProcure (logged-in WorkCenter, 2026-08-11): **Cert. ID 2053713, SB(Micro), Approved 2026-07-18, valid 2026-07-18 to 2028-07-31.** Approval landed 2 days after the tracker's last INCOMPLETE note and 9 days before the first email citing it — the claim was accurate when sent. The tracker itself is just stale.
 
-**Fresher bounce numbers.** This doc's ~30% bounce rate comes from a 47-email sample. Actual current volume is far higher: Gmail shows **~201 "State SB Micro" sends** with **~18 bounce/undeliverable notifications in the last 60 days**, roughly **9%**. Better than 30%, but still well above the 5% threshold this doc's own red-team section flags as the reputation-risk line. Sends are ongoing — the most recent found is dated 2026-08-13.
+**Fresher bounce numbers — initial estimate, corrected below.** This doc's ~30% bounce rate comes from a 47-email sample. First pass at a fresher number used a loosely-scoped search and came out to ~9% — **that estimate was wrong**; see the exact, fully-paginated count in "Findings — 2026-08-11 (cont'd)" below (20.3%, much closer to the original 30%). Sends are ongoing — the most recent found is dated 2026-08-13.
 
 **Data source mismatch — the "611 untouched leads" figure doesn't correspond to anything findable.** The actual live tracker doesn't hold a flat list of 713 qualified/611 untouched leads at all. It runs a stage-gated model (BID NOW / CAPTURE / WATCH / PARTNER / REJECT) with a hard rule — "OWNER APPROVAL REQUIRED" before any contact, email, registration, or account change — and its current live queue is **0 BID NOW, 0 CAPTURE, 3 WATCH, 0 PARTNER**. That does not match "611 untouched leads" in any form. Two possibilities, unresolved: either the 611/713 figures came from a different, unlocated source, or the ~201 "State SB Micro" sends are happening outside the tracker's own approval-gate process entirely. Worth resolving before trusting any "leads remaining" count.
-
-### Build
-
-- [ ] [#15](https://github.com/gera3d/email-next/issues/15) Verify email address before send — standalone script, syntax + MX check (in progress — chosen as first build target)
-- [ ] [#16](https://github.com/gera3d/email-next/issues/16) Tracking reads Gmail directly instead of the stale sheet
 
 ### Fix
 
@@ -105,5 +100,28 @@ Investigating step 1 (sender health) surfaced three things beyond the original s
 
 ### Research
 
-- [ ] Get an exact sent/bounce count (Gmail's thread-count estimates are rounded for large result sets) before step 3's "trustworthy number" gate can mean anything concrete
-- [ ] Determine whether the ~201 "State SB Micro" sends are going through the Pipeline Control approval gate at all, given the tracker's own queue shows zero active BID NOW/CAPTURE rows — if they're bypassing it, that's a process gap bigger than the bounce rate
+- [x] Get an exact sent/bounce count — done below, supersedes the ~201/~9% estimate.
+- [ ] Determine whether these sends are going through the Pipeline Control approval gate at all, given the tracker's own queue shows zero active BID NOW/CAPTURE rows — if they're bypassing it, that's a process gap bigger than the bounce rate
+
+## Findings — 2026-08-11 (cont'd): exact send/bounce/reply audit (issue #16)
+
+Built the on-demand version of issue #16: queried Gmail directly (`subject:"State SB Micro"`, fully paginated, all pages read) instead of trusting a spreadsheet. This is exact, not an estimate.
+
+**Correction to the number above:** the earlier "~201 sent, ~18 bounced ≈ 9%" came from a loosely-scoped compound search (OR'd certification terms, not a clean subject match) and was wrong. The real number, from a precise subject-exact query covering the full thread history:
+
+| Status | Count | % |
+|---|---|---|
+| Bounced | 13 | 20.3% |
+| Replied | 2 (1 genuine — DMV, Jill Leake, "Thank you for your information"; 1 automatic out-of-office) | 3.1% |
+| Awaiting (sent, no bounce or reply yet) | 49 | 76.6% |
+| **Total threads** | **64** | |
+
+20.3% is close to the original 47-email sample's ~28-30% and well above the plan's own 5% risk threshold — the earlier "9%, much improved" read was wrong. Bounce rate has not meaningfully improved.
+
+**New defect found: confirmed duplicate sends, no cooldown.** 5 recipients were emailed twice, 3-15 days apart, same or near-identical subject: `jennifer.kline@tahoe.ca.gov` (Tahoe Conservancy, 7/29 + 8/13), `jeanette.dubesa@resources.ca.gov` (Natural Resources Agency, 7/29 + 8/13), `kerensa.khan@lci.ca.gov` (LCI, 7/29 + 8/12), `russell.lee@cpuc.ca.gov` (CPUC, 7/28 + 8/4), `aliza.montelongo@csac.ca.gov` (CSAC, 7/25 + 7/28). This is issue #11 (contact fatigue/cooldown) actually happening, not a hypothetical — 10 of the 64 threads (15.6%) are one half of a duplicate pair.
+
+### Build
+
+- [x] [#15](https://github.com/gera3d/email-next/issues/15) Verify email address before send — `tools/verify_email/`, done
+- [x] [#16](https://github.com/gera3d/email-next/issues/16) Tracking reads Gmail directly — on-demand version done (this section). Standing/cadence version needs its own Gmail API OAuth setup (Google Cloud project + client) — deferred; not needed to unblock step 2.
+- [ ] [#11](https://github.com/gera3d/email-next/issues/11) Contact fatigue cooldown — now has 5 concrete confirmed cases to design against, not hypothetical
