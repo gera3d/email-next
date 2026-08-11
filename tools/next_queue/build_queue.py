@@ -7,7 +7,6 @@ import argparse
 import csv
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 THIS_DIR = Path(__file__).parent
@@ -73,43 +72,46 @@ def main():
     manually_flagged = [r for r in all_rows if r.get(args.flag_col, "").strip()]
     print(f"{len(all_rows)} total leads -> {len(manually_flagged)} manually flagged (excluded), {len(unflagged)} candidates")
 
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp = Path(tmp)
-        candidates_csv = tmp / "candidates.csv"
-        with candidates_csv.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(unflagged)
+    with (out_dir / "manually_flagged.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(manually_flagged)
 
-        verify_out = tmp / "verify_out"
-        verify_cmd = [sys.executable, str(THIS_DIR.parent / "verify_email" / "verify_email.py"),
-                      str(candidates_csv), "--email-col", args.email_col, "--out-dir", str(verify_out), "--workers", "8"]
-        if args.smtp_check:
-            verify_cmd += ["--smtp-check", "--helo-domain", args.helo_domain]
-        run(verify_cmd)
+    candidates_csv = out_dir / "candidates.csv"
+    with candidates_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(unflagged)
 
-        verified_clean = verify_out / "clean.csv"
+    verify_out = out_dir / "verify_out"
+    verify_cmd = [sys.executable, str(THIS_DIR.parent / "verify_email" / "verify_email.py"),
+                  str(candidates_csv), "--email-col", args.email_col, "--out-dir", str(verify_out), "--workers", "8"]
+    if args.smtp_check:
+        verify_cmd += ["--smtp-check", "--helo-domain", args.helo_domain]
+    run(verify_cmd)
 
-        if args.sent_log:
-            merged_log = tmp / "merged_sent_log.csv"
-            n = normalize_sent_log(args.sent_log, merged_log)
-            print(f"Merged {len(args.sent_log)} sent-log source(s) -> {n} contact events")
+    verified_clean = verify_out / "clean.csv"
 
-            cooldown_out = tmp / "cooldown_out"
-            cooldown_cmd = [sys.executable, str(THIS_DIR.parent / "contact_cooldown" / "cooldown_check.py"),
-                             str(verified_clean), str(merged_log),
-                             "--candidate-email-col", args.email_col,
-                             "--sent-email-col", "email", "--sent-date-col", "date_sent",
-                             "--cooldown-days", str(args.cooldown_days), "--out-dir", str(cooldown_out)]
-            if args.as_of:
-                cooldown_cmd += ["--as-of", args.as_of]
-            run(cooldown_cmd)
-            eligible_csv = cooldown_out / "eligible.csv"
-        else:
-            eligible_csv = verified_clean
+    if args.sent_log:
+        merged_log = out_dir / "merged_sent_log.csv"
+        n = normalize_sent_log(args.sent_log, merged_log)
+        print(f"Merged {len(args.sent_log)} sent-log source(s) -> {n} contact events")
 
-        with eligible_csv.open(newline="", encoding="utf-8") as f:
-            eligible_rows = list(csv.DictReader(f))
+        cooldown_out = out_dir / "cooldown_out"
+        cooldown_cmd = [sys.executable, str(THIS_DIR.parent / "contact_cooldown" / "cooldown_check.py"),
+                         str(verified_clean), str(merged_log),
+                         "--candidate-email-col", args.email_col,
+                         "--sent-email-col", "email", "--sent-date-col", "date_sent",
+                         "--cooldown-days", str(args.cooldown_days), "--out-dir", str(cooldown_out)]
+        if args.as_of:
+            cooldown_cmd += ["--as-of", args.as_of]
+        run(cooldown_cmd)
+        eligible_csv = cooldown_out / "eligible.csv"
+    else:
+        eligible_csv = verified_clean
+
+    with eligible_csv.open(newline="", encoding="utf-8") as f:
+        eligible_rows = list(csv.DictReader(f))
 
     def sort_key(row):
         tier_rank = TIER_ORDER.get(row.get(args.tier_col, ""), 99)
