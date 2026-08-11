@@ -18,7 +18,7 @@ Writes three files to `--out-dir`:
 ## What it checks
 
 1. **Syntax** — regex match on the address.
-2. **MX / A record** — does the domain have somewhere to route mail. Catches `domain_not_found` and syntax errors, both zero-cost.
+2. **MX / A record** — does the domain have somewhere to route mail. Catches `domain_not_found` and syntax errors, both zero-cost. DNS timeouts are retried once, then land in `review.csv`, not `flagged.csv` — a resolver timeout under load isn't evidence a domain is dead. (Found the hard way: running this against a 712-row real list at `--workers 24` produced 133 false `flagged` results from resolver contention alone; `--workers 8` and the retry brought that to 0.)
 3. **SMTP `RCPT TO` probe** (`--smtp-check`, opt-in) — connects to the actual mail server and asks if the mailbox exists, without sending a message. This is what actually catches most real-world bounces.
 
 **Why MX-only isn't enough:** tested against 4 addresses that actually bounced from real "State SB Micro" sends — 3 of 4 had valid domains with working mail servers; only the specific mailbox was wrong. MX-only checking would have called all 3 clean. Only the SMTP probe catches that class of failure.

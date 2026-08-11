@@ -20,32 +20,47 @@ RESOLVER.timeout = 5
 RESOLVER.lifetime = 5
 
 
-def domain_has_mail_route(domain: str) -> tuple[bool, str]:
+def _resolve_with_retry(domain: str, rtype: str):
+    """One retry on timeout — under load, transient resolver contention is far more common
+    than an actually-unreachable authoritative server, and a timeout is not evidence a
+    domain is bad (same principle as the SMTP 'review' bucket below)."""
+    for attempt in range(2):
+        try:
+            return RESOLVER.resolve(domain, rtype)
+        except dns.exception.Timeout:
+            if attempt == 1:
+                raise
+    raise dns.exception.Timeout()
+
+
+def domain_has_mail_route(domain: str) -> tuple[str, str]:
+    """Returns (status, reason) where status is 'ok' (has a mail route), 'bad' (confirmed
+    no route), or 'unknown' (inconclusive — DNS trouble, not evidence of a bad address)."""
     try:
-        answers = RESOLVER.resolve(domain, "MX")
+        answers = _resolve_with_retry(domain, "MX")
         if len(answers) > 0:
-            return True, "mx_found"
+            return "ok", "mx_found"
     except dns.resolver.NoAnswer:
         pass
     except dns.resolver.NXDOMAIN:
-        return False, "domain_not_found"
+        return "bad", "domain_not_found"
     except dns.exception.Timeout:
-        return False, "dns_timeout"
+        return "unknown", "dns_timeout"
     except Exception as e:
-        return False, f"dns_error:{type(e).__name__}"
+        return "unknown", f"dns_error:{type(e).__name__}"
 
     # RFC 5321 fallback: no MX record means mail goes to the A/AAAA record directly.
     try:
-        RESOLVER.resolve(domain, "A")
-        return True, "a_record_fallback"
+        _resolve_with_retry(domain, "A")
+        return "ok", "a_record_fallback"
     except dns.resolver.NXDOMAIN:
-        return False, "domain_not_found"
+        return "bad", "domain_not_found"
     except dns.resolver.NoAnswer:
-        return False, "no_mx_no_a"
+        return "bad", "no_mx_no_a"
     except dns.exception.Timeout:
-        return False, "dns_timeout"
+        return "unknown", "dns_timeout"
     except Exception as e:
-        return False, f"dns_error:{type(e).__name__}"
+        return "unknown", f"dns_error:{type(e).__name__}"
 
 
 def mx_hosts(domain: str) -> list[str]:
@@ -89,8 +104,8 @@ def check_email(email: str, domain_cache: dict) -> tuple[str, str]:
     domain = email.rsplit("@", 1)[1].lower()
     if domain not in domain_cache:
         domain_cache[domain] = domain_has_mail_route(domain)
-    ok, reason = domain_cache[domain]
-    return ("clean" if ok else "flag"), reason
+    status, reason = domain_cache[domain]
+    return {"ok": "clean", "bad": "flag", "unknown": "review"}[status], reason
 
 
 def main():
