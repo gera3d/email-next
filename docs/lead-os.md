@@ -93,6 +93,25 @@ Investigating step 1 (sender health) surfaced three things beyond the original s
 
 **Data source mismatch — the "611 untouched leads" figure doesn't correspond to anything findable.** The actual live tracker doesn't hold a flat list of 713 qualified/611 untouched leads at all. It runs a stage-gated model (BID NOW / CAPTURE / WATCH / PARTNER / REJECT) with a hard rule — "OWNER APPROVAL REQUIRED" before any contact, email, registration, or account change — and its current live queue is **0 BID NOW, 0 CAPTURE, 3 WATCH, 0 PARTNER**. That does not match "611 untouched leads" in any form. Two possibilities, unresolved: either the 611/713 figures came from a different, unlocated source, or the ~201 "State SB Micro" sends are happening outside the tracker's own approval-gate process entirely. Worth resolving before trusting any "leads remaining" count.
 
+## System status — 2026-08-13: the core loop works end to end
+
+The 611/713 mismatch is resolved: the actual leads live in `/Users/test/Documents/GovContracts/YRC_Master_Buyer_List_Polished.csv` (712 data rows), a separate local project from the "YRC Government Opportunity Pipeline" Sheet. The real send process is a Codex skill, `yrc-gmail-outreach-refresh`, not this repo.
+
+Built and wired in this session, in `GovContracts/tools/`:
+
+- `verify_email/` — dead-domain check, fixed a bug where DNS timeouts were misread as bad addresses (133 false flags -> 0)
+- `contact_cooldown/` — recipient-only duplicate check, fixed a crash on blank dates, documented that `YRC_Outreach_Log.csv` alone undercounts
+- `next_queue/` — **the actual "who to email next" answer.** Master list minus manual flags minus dead domains minus cooldown-blocked, ranked by tier and deal size. Run: 712 leads -> 35 flagged, 0 dead domains, 95 cooldown-blocked -> **582 ready to draft**, each with the real buying fact attached.
+
+`yrc-gmail-outreach-refresh/SKILL.md` now starts every batch by running `next_queue`, not by hand-picking from the raw list.
+
+**The full loop, working today:** `next_queue` picks who's next and why -> the skill drafts the email in voice, from that real fact -> owner reviews and schedules in Gmail -> a #16-style Gmail audit checks what actually happened. That is the tool's stated purpose, delivered without the Next.js/Supabase app — proving the process manually, as this doc's pivot intended.
+
+**Still open:**
+- The stale certification cells in the Sheet need a human to fix them (no Sheets write access available to fix programmatically)
+- `next_queue`'s cooldown check is only as complete as the sent-log(s) fed into it — a fresher Gmail pull before each batch is worth more than trusting `YRC_Outreach_Log.csv` alone
+- Personalization depth (step 2 of the 3-step plan) still isn't addressed — `next_queue` supplies the buying fact, but the skill still writes each note by hand
+
 ### Fix
 
 - [ ] Correct the stale certification status in the "YRC Government Opportunity Pipeline" Google Sheet — it still reads INCOMPLETE/not-submitted; actual status is Approved 2026-07-18–2028-07-31
