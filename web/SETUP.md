@@ -34,6 +34,8 @@ Opens at `http://localhost:3000`.
 
 ## What's real right now vs. stubbed
 
-- **Real**: Supabase-backed three-pane UI (goals rail / queue / draft detail), approve/skip/snooze/resolved-elsewhere actions write to the DB live.
+- **Real**: Supabase-backed three-pane UI (goals rail / queue / draft detail); approve/skip/snooze/resolved-elsewhere actions write to the DB live; history view with undo; goal create/edit/archive/reactivate; **cooldown is enforced by the app itself** -- approving/skipping/resolving a contact hides them from every goal's queue for that goal's configured cooldown window, and undo clears it; the agent API (`API.md`) is tested end to end including a real Gmail draft round-trip; an in-app "How to use this" panel.
 - **Seeded, not live-generated**: the 40 queue items come from the real GovContracts `next_queue.py` output (real leads, real buying-fact reasoning), inserted directly via SQL — not from a live reasoning engine yet.
-- **Not built yet**: Google sign-in, live Claude-drafted queue items, actual Gmail draft/send (Approve & Send currently only updates status in the DB), tracking/analytics, goal create/edit UI.
+- **Not built yet**: Google sign-in for browser-direct sending (not needed for the agent-driven workflow -- see `API.md`), live Claude-drafted queue items (needs an Anthropic API key), reply/bounce tracking, scoreboard, contact resolution from live Gmail import, voice calibration, daily digest.
+
+Every item above marked "Real" has been clicked through in an actual browser and verified against the database directly, not just code-reviewed.
