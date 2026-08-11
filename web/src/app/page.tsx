@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import type { Goal, QueueItem } from "@/lib/types";
+import HelpPanel from "@/components/HelpPanel";
 
 const STATUS_LABELS: Record<QueueItem["status"], string> = {
   pending: "Pending",
@@ -31,6 +32,7 @@ export default function Home() {
   const [newGoalName, setNewGoalName] = useState("");
   const [newGoalDescription, setNewGoalDescription] = useState("");
   const [newGoalCadence, setNewGoalCadence] = useState(30);
+  const [showHelp, setShowHelp] = useState(false);
 
   const loadGoals = useCallback(async () => {
     const { data, error } = await supabase.from("goals").select("*").order("created_at");
@@ -142,10 +144,20 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-neutral-950 text-neutral-100">
-      <header className="border-b border-neutral-800 px-4 py-3">
-        <h1 className="text-lg font-semibold">email-next</h1>
-        <p className="text-xs text-neutral-500">Who to email next, and what to say.</p>
+      <header className="border-b border-neutral-800 px-4 py-3 flex justify-between items-center">
+        <div>
+          <h1 className="text-lg font-semibold">email-next</h1>
+          <p className="text-xs text-neutral-500">Who to email next, and what to say.</p>
+        </div>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="text-xs text-neutral-400 hover:text-orange-400 border border-neutral-800 hover:border-orange-800 rounded px-3 py-1.5"
+        >
+          How to use this
+        </button>
       </header>
+
+      {showHelp && <HelpPanel onClose={() => setShowHelp(false)} />}
 
       {error && (
         <div className="bg-red-950 border-b border-red-800 px-4 py-2 text-sm text-red-300 flex justify-between">
