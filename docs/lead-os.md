@@ -1,3 +1,15 @@
+## System status — 2026-08-14: first real batch drafted, and a second data problem found
+
+Attempted the first real `next_queue` batch (5 drafts) and hit a new blocker before writing anything: cross-checked the master list's top-ranked rows against a richer source file (`GovContracts/tmp/enriched_buyers_data.json`) and found **56% of the 277 cross-checkable rows have a "Largest PO Amount" off by more than 2x** — e.g. Christina Alexander (EDD) showed $63.5M/"IT Consulting For Websites" in the master list; her real record is $1.1M/"Cisco Hardware and Software." Drafting from the master list's fields as-is would have stated false purchase history to state buyers.
+
+Worse: even the enriched source's own `service_pattern` auto-classification isn't reliable — it labeled a canopy-tent purchase and a magazine sponsorship ad as "Website & CMS Modernization." No field in either file can be trusted without reading the actual `sample_title` text by hand.
+
+**Resolution used for this batch only:** filtered to the 104 rows with a cross-verified PO amount, then manually read every title and kept only the 5 unambiguously web-related ones (a tent purchase, an FTP server renewal, and audit software all got excluded despite passing the amount check). Ran the skill's mandatory exact-recipient Gmail audit on the finalists — it caught an existing draft to a recipient (`joyce.swisher@cpuc.ca.gov`) that `next_queue`'s cooldown log never flagged, confirming the log alone isn't complete.
+
+**5 drafts created (not sent), all read back and confirmed in Gmail:** Debi Shaw (Covered California), Erik Miyao (First 5 California), Shael Rebol (CDE), Pablo Salinas (CPUC), Lauren Kreipe (CDE). Each uses one manually-verified buying fact from `sample_title`, the skill's exact template, and the confirmed-current cert block.
+
+**Not fixed yet — root cause unknown:** why 56% of `YRC_Master_Buyer_List_Polished.csv`'s title/amount fields don't match the richer source. `next_queue` should not be trusted at full scale (677 candidates) until this is resolved — right now it only carries a manual, per-row cross-check for the tiny slice of the list that's been touched by hand.
+
 # Lead OS: prove the process before building the app
 
 Pivot from the original plan: instead of building email-next as an app first, prove the underlying workflow ("Lead OS") manually/operationally across real outreach, then productize once it demonstrably works. This doc captures why, the evidence that drove the pivot, and the current plan.
